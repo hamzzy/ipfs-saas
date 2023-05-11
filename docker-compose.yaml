@@ -1,0 +1,70 @@
+version: '3'
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    restart: on-failure
+    ports:
+       - "9001:9001"
+    env_file:
+        - ./api-gateway/.env.local
+    networks:
+      - backend
+    volumes:
+      - ./auth:/app/auth
+      - /app/auth/node_modules
+    command: ""
+    depends_on:
+       - postgres
+       - ipfs
+       - grafana
+  
+  
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=master123
+      - POSTGRES_DB=postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - backend
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+    networks:
+      - backend
+
+# IPFS
+  ipfs:
+    image: ipfs/go-ipfs:v0.12.1
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+      - "8080:8080"
+      - "5001:5001"
+    volumes:
+      - ipfs_data:/data/ipfs
+
+networks:
+  backend:
+    driver: bridge
+volumes:
+  pg_data:
+    driver: local
+  mongo_data:
+    driver: local
+  redis_data:
+    driver: local
+  ipfs_data:
+     driver: local
+  

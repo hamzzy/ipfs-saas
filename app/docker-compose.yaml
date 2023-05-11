@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  ipfs-as-service-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    # command: sh -c "chmod a+x ./start-app.sh && ./start-app.sh"
+    command: "make migrate-dev"
+    depends_on:
+      db:
+        condition: service_healthy
+      
+  db:
+    container_name: postgres-db
+    image: postgres:latest
+    volumes:
+        - ./data/postgres:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  ipfs:
+    image: ipfs/go-ipfs:v0.12.1
+    environment:
+      IPFS_SWARM_KEY: "/key/swarm/psk/1.0.0/\n/base16/\n${IPFS_SWARM_KEY}"
+    ports:
+      - '5001:5001'
+      - '8089:8080'
+    volumes:
+      - ./local-data/ipfs:/data/ipfs
+
+
+volumes:
+  db:
+
+
+
